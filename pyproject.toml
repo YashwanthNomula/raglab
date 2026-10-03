@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raglab"
+version = "1.0.0"
+description = "RAG evaluation lab: hybrid retrieval with honest ablation benchmarks"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dense = ["sentence-transformers", "numpy"]
+
+[project.scripts]
+raglab = "raglab.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["raglab*"]
