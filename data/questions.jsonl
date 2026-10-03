@@ -1,0 +1,33 @@
+{"id": "q01", "question": "How do you reverse a list in Python?", "relevant_ids": ["d01"], "reference_answer": "Use the reverse() method to reverse in place, slicing [::-1] for a reversed copy, or the reversed() built-in for an iterator."}
+{"id": "q02", "question": "What causes ocean tides?", "relevant_ids": ["d05"], "reference_answer": "Ocean tides are caused mainly by the Moon's gravitational pull on Earth's oceans, with a smaller contribution from the Sun."}
+{"id": "q03", "question": "Who painted the Mona Lisa?", "relevant_ids": ["d06"], "reference_answer": "Leonardo da Vinci painted the Mona Lisa between 1503 and 1506."}
+{"id": "q04", "question": "What is photosynthesis?", "relevant_ids": ["d07"], "reference_answer": "Photosynthesis is the process by which plants convert sunlight, water, and carbon dioxide into glucose and oxygen."}
+{"id": "q05", "question": "How does a neural network learn from data?", "relevant_ids": ["d08"], "reference_answer": "Neural networks learn via backpropagation: gradients from a loss function guide an optimizer to adjust weights over many training examples."}
+{"id": "q06", "question": "What is inflation in economics?", "relevant_ids": ["d09"], "reference_answer": "Inflation is the rate at which the general price level rises, eroding purchasing power; central banks typically target about 2%."}
+{"id": "q07", "question": "Which planet is known as the Red Planet?", "relevant_ids": ["d03"], "reference_answer": "Mars is known as the Red Planet because iron oxide on its surface gives it a reddish appearance."}
+{"id": "q08", "question": "What is the capital of Japan?", "relevant_ids": ["d10"], "reference_answer": "Tokyo is the capital of Japan."}
+{"id": "q09", "question": "How do vaccines protect against disease?", "relevant_ids": ["d11"], "reference_answer": "Vaccines expose the immune system to a harmless form of a pathogen so it builds antibodies and memory cells for a fast future response."}
+{"id": "q10", "question": "What caused the fall of the Roman Empire?", "relevant_ids": ["d12"], "reference_answer": "The Western Roman Empire fell in 476 CE due to political instability, economic trouble, reliance on mercenaries, and barbarian invasions."}
+{"id": "q11", "question": "What is the difference between weather and climate?", "relevant_ids": ["d13"], "reference_answer": "Weather is short-term atmospheric conditions; climate is the long-term average of weather over 30+ years."}
+{"id": "q12", "question": "How do you make sourdough bread?", "relevant_ids": ["d14"], "reference_answer": "Make a flour-water starter, mix with flour/water/salt, ferment with folds, shape, proof, and bake in a hot Dutch oven."}
+{"id": "q13", "question": "What is quantum computing?", "relevant_ids": ["d15"], "reference_answer": "Quantum computing uses qubits exploiting superposition and entanglement to solve certain problems faster than classical computers."}
+{"id": "q14", "question": "Who wrote Romeo and Juliet?", "relevant_ids": ["d16"], "reference_answer": "William Shakespeare wrote Romeo and Juliet in the 1590s."}
+{"id": "q15", "question": "What does DNA stand for?", "relevant_ids": ["d17"], "reference_answer": "DNA stands for deoxyribonucleic acid."}
+{"id": "q16", "question": "How do electric cars help reduce emissions?", "relevant_ids": ["d18"], "reference_answer": "EVs produce zero tailpipe emissions; lifecycle emissions are far lower than gasoline cars, especially on clean electricity grids."}
+{"id": "q17", "question": "What is the largest ocean on Earth?", "relevant_ids": ["d19"], "reference_answer": "The Pacific Ocean is the largest ocean, covering about a third of Earth's surface."}
+{"id": "q18", "question": "Why do humans dream?", "relevant_ids": ["d20"], "reference_answer": "Dreaming is believed to help consolidate memories and process emotions during REM sleep."}
+{"id": "q19", "question": "What is a blockchain?", "relevant_ids": ["d21"], "reference_answer": "A blockchain is a distributed, tamper-evident ledger of transactions agreed upon by a decentralized network."}
+{"id": "q20", "question": "When and why was the Eiffel Tower built?", "relevant_ids": ["d22"], "reference_answer": "The Eiffel Tower was built for the 1889 World's Fair in Paris, designed by Gustave Eiffel."}
+{"id": "q21", "question": "What company manufactures Snickers bars?", "relevant_ids": ["d04"], "reference_answer": "Mars, Incorporated manufactures Snickers bars."}
+{"id": "q22", "question": "How do pythons kill their prey?", "relevant_ids": ["d25"], "reference_answer": "Pythons coil around prey and squeeze until it suffocates."}
+{"id": "q23", "question": "What metal is liquid at room temperature?", "relevant_ids": ["d26"], "reference_answer": "Mercury is the only metal liquid at room temperature."}
+{"id": "q24", "question": "Which planet is closest to the Sun?", "relevant_ids": ["d27"], "reference_answer": "Mercury is the closest planet to the Sun."}
+{"id": "q25", "question": "What caused the Great Depression?", "relevant_ids": ["d28"], "reference_answer": "The 1929 stock market crash, bank failures, and tight monetary policy caused the Great Depression."}
+{"id": "q26", "question": "How large is the Amazon rainforest?", "relevant_ids": ["d29"], "reference_answer": "The Amazon rainforest covers 5.5 million square kilometers."}
+{"id": "q27", "question": "Who founded Amazon?", "relevant_ids": ["d30"], "reference_answer": "Jeff Bezos founded Amazon in 1994."}
+{"id": "q28", "question": "What is cloud computing?", "relevant_ids": ["d31"], "reference_answer": "Cloud computing delivers servers, storage, and software over the internet on demand."}
+{"id": "q29", "question": "How do trees move sugar from leaves to roots?", "relevant_ids": ["d32"], "reference_answer": "The phloem in the inner bark transports sugars from leaves to roots."}
+{"id": "q30", "question": "What is the difference between a bull market and a bear market?", "relevant_ids": ["d33"], "reference_answer": "A bull market rises over time; a bear market falls 20% or more."}
+{"id": "q31", "question": "What is soup stock made from?", "relevant_ids": ["d34"], "reference_answer": "Soup stock is made by simmering bones, vegetables, and aromatics in water."}
+{"id": "q32", "question": "When did the Cold War end?", "relevant_ids": ["d35"], "reference_answer": "The Cold War ended in 1991 with the dissolution of the Soviet Union."}
+{"id": "q33", "question": "What is the most populous island in the world?", "relevant_ids": ["d37"], "reference_answer": "Java is the world's most populous island."}
