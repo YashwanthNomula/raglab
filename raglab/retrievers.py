@@ -49,10 +49,16 @@ class BM25Retriever:
             tokens = tokens + ["_".join(b) for b in bigrams(tokens)]
         return tokens
 
-    def search(self, query, k=5):
-        qtf = Counter(self._tokens(query))
+    def search(self, query, k=5, query_weights=None):
+        """query_weights: optional {term: weight} to score with instead of the
+        plain query tokens — used by RM3-lite query expansion. Terms missing
+        from the index are ignored, exactly like unknown query tokens."""
+        if query_weights is None:
+            terms = {t: 1.0 for t in Counter(self._tokens(query))}
+        else:
+            terms = {t: float(w) for t, w in query_weights.items() if w}
         scores = defaultdict(float)
-        for term in qtf:
+        for term, w in terms.items():
             idf = self.idf.get(term)
             if idf is None:
                 continue
@@ -61,7 +67,7 @@ class BM25Retriever:
                 if not f:
                     continue
                 denom = f + self.k1 * (1 - self.b + self.b * self.doc_len[cid] / self.avgdl)
-                scores[cid] += idf * f * (self.k1 + 1) / denom
+                scores[cid] += w * idf * f * (self.k1 + 1) / denom
         ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return ranked[:k]
 
@@ -90,13 +96,21 @@ class TfidfRetriever:
             for cid, vec in self.doc_vec.items()
         }
 
-    def _query_vec(self, query):
-        tf = Counter(tokenize(query))
-        total = sum(tf.values()) or 1
-        return {t: (f / total) * self.idf[t] for t, f in tf.items() if t in self.idf}
+    def _query_vec(self, query, query_weights=None):
+        if query_weights is None:
+            tf = Counter(tokenize(query))
+            total = sum(tf.values()) or 1
+            return {t: (f / total) * self.idf[t] for t, f in tf.items() if t in self.idf}
+        # RM3-lite path: the weight dict already carries term importance;
+        # unknown terms are dropped, exactly like unknown query tokens.
+        return {
+            t: float(w) * self.idf[t]
+            for t, w in query_weights.items()
+            if w and t in self.idf
+        }
 
-    def search(self, query, k=5):
-        qvec = self._query_vec(query)
+    def search(self, query, k=5, query_weights=None):
+        qvec = self._query_vec(query, query_weights)
         qnorm = math.sqrt(sum(v * v for v in qvec.values())) or 1.0
         scores = []
         for cid, dvec in self.doc_vec.items():

@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from .chunking import chunk_documents
+from .expansion import ExpandedRetriever
 from .retrievers import BM25Retriever, TfidfRetriever, HybridRetriever
 from .rerank import FeatureReranker
 
@@ -24,7 +25,8 @@ class Answer:
 class RagPipeline:
     """Zero-dependency RAG pipeline with swappable retrieval strategies.
 
-    config options: "tfidf", "bm25", "bm25+phrases", "bm25+phrases+rerank"
+    config options: "tfidf", "bm25", "bm25+phrases", "bm25+phrases+rerank",
+    "bm25+rm3", "bm25+phrases+rm3", "bm25+phrases+rm3+rerank"
     """
 
     def __init__(self, documents, config="hybrid+rerank", chunk_size=400, overlap=80):
@@ -45,6 +47,17 @@ class RagPipeline:
             self.retriever = BM25Retriever(self.chunks, use_bigrams=True)
         elif config == "bm25+phrases+rerank":
             self.retriever = BM25Retriever(self.chunks, use_bigrams=True)
+            self.reranker = FeatureReranker(self.chunks)
+        elif config == "bm25+rm3":
+            self.retriever = ExpandedRetriever(BM25Retriever(self.chunks))
+        elif config == "bm25+phrases+rm3":
+            self.retriever = ExpandedRetriever(
+                BM25Retriever(self.chunks, use_bigrams=True)
+            )
+        elif config == "bm25+phrases+rm3+rerank":
+            self.retriever = ExpandedRetriever(
+                BM25Retriever(self.chunks, use_bigrams=True)
+            )
             self.reranker = FeatureReranker(self.chunks)
         elif config in ("hybrid", "hybrid+rerank"):
             # RRF fusion of BM25 + TF-IDF; kept for dense+lexical fusion via

@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 from . import metrics
 from .chunking import chunk_documents
+from .expansion import ExpandedRetriever
+from .judge import HeuristicJudge, evaluate_judge_metrics
 from .retrievers import BM25Retriever, TfidfRetriever, HybridRetriever
 from .rerank import FeatureReranker
 
@@ -25,6 +27,12 @@ def default_configs():
         EvalConfig(
             "bm25 + phrases",
             lambda chunks: BM25Retriever(chunks, use_bigrams=True),
+        ),
+        EvalConfig(
+            "bm25 + phrases + rm3",
+            lambda chunks: ExpandedRetriever(
+                BM25Retriever(chunks, use_bigrams=True)
+            ),
         ),
         EvalConfig(
             "bm25 + phrases + rerank",
@@ -57,7 +65,36 @@ class EvalHarness:
             results[cfg.name] = metrics.evaluate_run(ranked_per_query, self.relevant, k=k)
         return results
 
-    def markdown_report(self, results, k=5):
+    def run_judge_metrics(self, judge=None, k=5):
+        """Score reference answers with LLM-as-judge metrics, per config.
+
+        For each retrieval config, the top-k retrieved chunks become the
+        context and each question's ``reference_answer`` becomes the
+        answer. Faithfulness then measures whether the retrieved context
+        supports the gold answer — a retrieval-quality signal that needs
+        no LLM and no generated answers.
+        """
+        judge = judge or HeuristicJudge()
+        chunk_map = {c.chunk_id: c.text for c in self.chunks}
+        results = {}
+        for cfg in self.configs:
+            retriever = cfg.build(self.chunks)
+            reranker = FeatureReranker(self.chunks) if cfg.rerank else None
+            items = []
+            for q in self.questions:
+                cands = retriever.search(q["question"], k=max(k, 20) if reranker else k)
+                if reranker:
+                    cands = reranker.rerank(q["question"], cands, k=k)
+                contexts = [chunk_map[cid] for cid, _ in cands[:k]]
+                items.append({
+                    "question": q["question"],
+                    "answer": q.get("reference_answer", ""),
+                    "contexts": contexts,
+                })
+            results[cfg.name] = evaluate_judge_metrics(items, judge=judge)
+        return results
+
+    def markdown_report(self, results, k=5, judge_results=None, judge_label=""):
         metric_names = [f"recall@{k}", f"precision@{k}", "mrr", f"ndcg@{k}", "map"]
         lines = ["# raglab evaluation report", ""]
         lines.append(f"Questions: {len(self.questions)} | Documents: {len(self.documents)} | Chunks: {len(self.chunks)} | k={k}")
@@ -79,6 +116,18 @@ class EvalHarness:
                     continue
                 lift = (res["mrr"] - results[baseline_name]["mrr"]) / base * 100
                 lines.append(f"- **{name}**: {lift:+.1f}% MRR")
+        if judge_results is not None:
+            lines.append("")
+            lines.append("## LLM-as-judge: reference-answer metrics"
+                         f" ({judge_label or 'judge'})")
+            lines.append("")
+            lines.append("| config | faithfulness | answer_relevancy |")
+            lines.append("|---|---|---|")
+            for name, res in judge_results.items():
+                lines.append(
+                    f"| {name} | {res['faithfulness']:.3f} |"
+                    f" {res['answer_relevancy']:.3f} |"
+                )
         return "\n".join(lines)
 
 

@@ -17,10 +17,13 @@ def load_data():
 
 def test_bundled_data_loads():
     docs, questions = load_data()
-    assert len(docs) == 38
-    assert len(questions) == 33
+    assert len(docs) == 106
+    assert len(questions) == 53
+    assert len({d["id"] for d in docs}) == 106
+    assert len({q["id"] for q in questions}) == 53
     for q in questions:
         assert q["relevant_ids"]
+        assert q.get("reference_answer")
         for rid in q["relevant_ids"]:
             assert rid in {d["id"] for d in docs}
 
