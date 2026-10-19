@@ -155,18 +155,37 @@ class HybridRetriever:
 
     RRF fuses ranks (not raw scores), which is why it can combine a BM25
     lexical retriever with a dense semantic one without score calibration:
-        rrf(d) = sum( 1 / (c + rank_i(d)) )
+        rrf(d) = sum( w_i / (c + rank_i(d)) )
+    `weights` assigns each member an interpolation weight (default: equal).
+    With two members, weight w on member 0 and 1-w on member 1 is the
+    alpha-interpolation `raglab eval --alpha-sweep` explores; alpha=1
+    (resp. 0) reproduces member 0's (resp. 1's) ranking exactly.
     """
 
-    def __init__(self, retrievers, c=60):
-        self.retrievers = retrievers
+    def __init__(self, retrievers, c=60, weights=None):
+        self.retrievers = list(retrievers)
         self.c = c
+        if weights is None:
+            weights = [1.0] * len(self.retrievers)
+        weights = [float(w) for w in weights]
+        if len(weights) != len(self.retrievers):
+            raise ValueError(
+                f"hybrid needs one weight per retriever: "
+                f"got {len(weights)} weights for {len(self.retrievers)} retrievers"
+            )
+        if any(w < 0 for w in weights):
+            raise ValueError(f"hybrid member weights must be non-negative, got {weights}")
+        if not any(w > 0 for w in weights):
+            raise ValueError("hybrid member weights must not all be zero")
+        self.weights = weights
 
     def search(self, query, k=5):
         fused = defaultdict(float)
-        for r in self.retrievers:
+        for w, r in zip(self.weights, self.retrievers):
+            if w == 0:
+                continue
             # ask each member for a deep candidate list, then fuse ranks
             for rank, (cid, _) in enumerate(r.search(query, k=50)):
-                fused[cid] += 1.0 / (self.c + rank + 1)
+                fused[cid] += w / (self.c + rank + 1)
         ranked = sorted(fused.items(), key=lambda x: x[1], reverse=True)
         return ranked[:k]

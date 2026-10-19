@@ -36,6 +36,7 @@ The benchmark grew from 38 docs / 33 questions to 106 docs / 53 questions on 202
 - Standard IR metrics: Recall@k, Precision@k, MRR, NDCG@k, MAP — all tested against hand-computed values
 - `EvalHarness` — runs every config over the Q&A set and emits a Markdown ablation report with lift-over-baseline
 - **LLM-as-judge answer metrics** (`raglab.judge`): `faithfulness(question, answer, contexts)` scores the share of answer claims supported by the retrieved contexts; `answer_relevancy(question, answer)` scores how well the answer addresses the question. Both delegate judgment to a pluggable judge — any callable `judge(task, **kwargs) -> score` with `task` in `{"claim_supported", "answer_relevant"}`. Ships with `HeuristicJudge`, a deterministic offline token-overlap baseline for tests and demos. `raglab eval --judge heuristic` appends both metrics to the ablation report.
+- **Hybrid weight (alpha) sweep** (`raglab eval --alpha-sweep 0,0.25,0.5,0.75,1`): re-scores the bundled benchmark at each hybrid interpolation weight — alpha weights the BM25 member, `1 - alpha` the TF-IDF member (weighted RRF, still rank-based, so no score calibration is needed). Prints a per-alpha MRR/NDCG table to the terminal, appends it to the report, and names the best alpha; `--report-json` adds a structured `alpha_sweep` section. Malformed grids (non-numbers, values outside [0, 1]) fail closed with an error. The sweep is diagnostic: the same questions tune and measure the weights, so the winner describes this benchmark, not a generalization claim. On the bundled corpus both members are lexical, so the sweep is nearly flat (0.959–0.962 MRR) — fusion earns its keep with diverse members (lexical + dense).
 
 ## Quickstart
 
@@ -44,6 +45,7 @@ pip install raglab
 raglab ask "Which planet is known as the Red Planet?"
 raglab eval --report report.md        # reproduce the benchmark above
 raglab eval --judge heuristic         # add faithfulness / answer relevancy (offline baseline judge)
+raglab eval --alpha-sweep 0,0.25,0.5,0.75,1 --report-json report.json  # sweep hybrid member weights (diagnostic)
 raglab ingest ./my-docs --out index.json
 ```
 
@@ -76,4 +78,4 @@ faithfulness(question, answer, context_texts, judge=llm_judge)
 
 ## Tests
 
-86 tests, all passing: `pytest tests/`
+108 tests, all passing: `pytest tests/`

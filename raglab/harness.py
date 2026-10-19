@@ -18,6 +18,38 @@ class EvalConfig:
     rerank: bool = False
 
 
+def parse_alpha_list(text):
+    """Parse a comma-separated alpha grid like "0,0.25,0.5,0.75,1".
+
+    Fail closed: raises ValueError on empty input, non-numeric entries,
+    or values outside [0, 1].
+    """
+    if not text or not text.strip():
+        raise ValueError("alpha list is empty; expected e.g. '0,0.25,0.5,0.75,1'")
+    alphas = []
+    for part in text.split(","):
+        part = part.strip()
+        try:
+            a = float(part)
+        except ValueError:
+            raise ValueError(f"alpha {part!r} is not a number") from None
+        if not 0.0 <= a <= 1.0:
+            raise ValueError(f"alpha {a} is outside [0, 1]")
+        alphas.append(a)
+    if not alphas:
+        raise ValueError("alpha list is empty; expected e.g. '0,0.25,0.5,0.75,1'")
+    return alphas
+
+
+def best_alpha(sweep_results):
+    """Pick the alpha with the highest MRR; ties break toward the smaller
+    alpha. Returns (alpha, metrics). Diagnostic only — the sweep is tuned
+    and measured on the same questions."""
+    if not sweep_results:
+        raise ValueError("no sweep results to choose from")
+    return max(sweep_results.items(), key=lambda kv: (kv[1]["mrr"], -kv[0]))
+
+
 def default_configs():
     """The ablation ladder: each rung adds one idea, so the report shows
     exactly what each technique contributes."""
@@ -65,6 +97,30 @@ class EvalHarness:
             results[cfg.name] = metrics.evaluate_run(ranked_per_query, self.relevant, k=k)
         return results
 
+    def run_alpha_sweep(self, alphas, k=5):
+        """Sweep the hybrid RRF member weight over the benchmark.
+
+        alpha weights the BM25 member, 1 - alpha the TF-IDF member
+        (weighted RRF, still rank-based — no score calibration needed).
+        Returns {alpha: metrics} in the order given. Diagnostic: the same
+        questions tune and measure the weights, so the winner is a
+        description of this benchmark, not a generalization claim.
+        """
+        results = {}
+        for a in alphas:
+            hybrid = HybridRetriever(
+                [BM25Retriever(self.chunks), TfidfRetriever(self.chunks)],
+                weights=[a, 1.0 - a],
+            )
+            ranked_per_query = {}
+            for q in self.questions:
+                cands = hybrid.search(q["question"], k=k)
+                ranked_per_query[q["id"]] = metrics.to_doc_ids(
+                    [cid for cid, _ in cands]
+                )
+            results[a] = metrics.evaluate_run(ranked_per_query, self.relevant, k=k)
+        return results
+
     def run_judge_metrics(self, judge=None, k=5):
         """Score reference answers with LLM-as-judge metrics, per config.
 
@@ -94,7 +150,8 @@ class EvalHarness:
             results[cfg.name] = evaluate_judge_metrics(items, judge=judge)
         return results
 
-    def markdown_report(self, results, k=5, judge_results=None, judge_label=""):
+    def markdown_report(self, results, k=5, judge_results=None, judge_label="",
+                        sweep_results=None):
         metric_names = [f"recall@{k}", f"precision@{k}", "mrr", f"ndcg@{k}", "map"]
         lines = ["# raglab evaluation report", ""]
         lines.append(f"Questions: {len(self.questions)} | Documents: {len(self.documents)} | Chunks: {len(self.chunks)} | k={k}")
@@ -128,6 +185,30 @@ class EvalHarness:
                     f"| {name} | {res['faithfulness']:.3f} |"
                     f" {res['answer_relevancy']:.3f} |"
                 )
+        if sweep_results is not None:
+            lines.append("")
+            lines.append("## Hybrid RRF alpha sweep (diagnostic)")
+            lines.append("")
+            lines.append(
+                "alpha = BM25 member weight in weighted RRF "
+                "(1 - alpha = TF-IDF weight). Same questions tune and measure "
+                "the weights, so the winner describes this benchmark — not a "
+                "generalization claim."
+            )
+            lines.append("")
+            lines.append(f"| alpha | recall@{k} | mrr | ndcg@{k} | map |")
+            lines.append("|---|---|---|---|---|")
+            for a, res in sweep_results.items():
+                lines.append(
+                    f"| {a:g} | {res[f'recall@{k}']:.3f} | {res['mrr']:.3f} |"
+                    f" {res[f'ndcg@{k}']:.3f} | {res['map']:.3f} |"
+                )
+            best_a, best_res = best_alpha(sweep_results)
+            lines.append("")
+            lines.append(
+                f"**Best alpha on this benchmark: {best_a:g}** "
+                f"(mrr={best_res['mrr']:.3f}, ndcg@{k}={best_res[f'ndcg@{k}']:.3f})"
+            )
         return "\n".join(lines)
 
 
