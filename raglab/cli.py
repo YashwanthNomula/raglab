@@ -40,6 +40,12 @@ def cmd_eval(args):
     questions = load_jsonl(args.questions or os.path.join(DATA_DIR, "questions.jsonl"))
     harness = EvalHarness(docs, questions)
     results = harness.run(k=args.k)
+    hardest = None
+    if args.hardest is not None:
+        if args.hardest < 0:
+            print("error: --hardest must be >= 0", file=sys.stderr)
+            return 2
+        hardest = harness.hardest_questions(results, k=args.k, n=args.hardest)
     judge_results, judge_label = None, ""
     if args.judge == "heuristic":
         judge = HeuristicJudge()
@@ -51,7 +57,8 @@ def cmd_eval(args):
     report = harness.markdown_report(results, k=args.k,
                                      judge_results=judge_results,
                                      judge_label=judge_label,
-                                     sweep_results=sweep_results)
+                                     sweep_results=sweep_results,
+                                     hardest=hardest)
     print(report)
     if args.report:
         with open(args.report, "w") as f:
@@ -66,6 +73,15 @@ def cmd_eval(args):
             "ablation": results,
             "judge": judge_results,
             "alpha_sweep": _sweep_payload(sweep_results, k=args.k),
+            "hardest": (
+                {
+                    "best_config": hardest[0],
+                    "zero_recall_count": hardest[1],
+                    "questions": hardest[2],
+                }
+                if hardest is not None
+                else None
+            ),
         }
         with open(args.report_json, "w") as f:
             json.dump(payload, f, indent=2)
@@ -165,6 +181,10 @@ def main(argv=None):
                         help="sweep the hybrid RRF member weight over the benchmark, "
                              "e.g. '0,0.25,0.5,0.75,1'; alpha weights the BM25 member, "
                              "1-alpha the TF-IDF member; values must be in [0,1]")
+    p_eval.add_argument("--hardest", default=None, type=int, metavar="N",
+                        help="also list up to N questions the best-MRR config "
+                             "retrieves nothing relevant for (recall@k = 0), "
+                             "as a 'Hardest questions' section in the report")
     p_eval.add_argument("--report-json", default=None, metavar="PATH",
                         help="also write the report as JSON, including an "
                              "'alpha_sweep' section when --alpha-sweep is used")
